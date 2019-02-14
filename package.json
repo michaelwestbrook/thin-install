@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/michaelwestbrook/thin-install/issues"
   },
-  "homepage": "https://github.com/michaelwestbrook/thin-install#readme"
+  "homepage": "https://github.com/michaelwestbrook/thin-install#readme",
+  "dependencies": {
+    "lodash": "^4.17.11",
+    "yargs": "^13.1.0"
+  }
 }
