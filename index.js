@@ -76,7 +76,7 @@ function pick(obj, props) {
 const argv = require('yargs').argv;
 const subset = argv.subset;
 const installCommand = argv.installCommand
-const packagePath = path.join(process.cwd(), 'sample-package.json');
+const packagePath = argv.packagePath ? argv.packagePath : path.join(process.cwd(), 'package.json');
 const package = require(packagePath);
 const backupName = `${packagePath}.backup`;
 package.devDependencies = pick(package.devDependencies, package.subsets[subset].include);
