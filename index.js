@@ -73,7 +73,28 @@ function pick(obj, props) {
     }), {});
 };
 
-const argv = require('yargs').argv;
+function getArgs() {
+  const args = process.argv.slice(2);
+  let subset, installCommand, packagePath;
+  args.forEach(arg => {
+    const keyValue = arg.split('=');
+    if (keyValue[0].toLowerCase() === '--subset') {
+      subset = keyValue[1];
+    } else if (keyValue[0].toLowerCase() === '--packagepath') {
+      packagePath = keyValue[1];
+    } else if (keyValue[0].toLowerCase() === '--installcommand') {
+      installCommand = keyValue[1];
+    }
+  });
+
+  return {
+    subset: subset,
+    installCommand: installCommand,
+    packagePath
+  }
+}
+
+const argv = getArgs();
 const subset = argv.subset;
 const installCommand = argv.installCommand
 const packagePath = argv.packagePath ? path.resolve(argv.packagePath) : path.join(process.cwd(), 'package.json');

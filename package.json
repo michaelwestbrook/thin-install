@@ -16,8 +16,6 @@
     "url": "https://github.com/michaelwestbrook/thin-install/issues"
   },
   "homepage": "https://github.com/michaelwestbrook/thin-install#readme",
-  "dependencies": {
-    "yargs": "^13.1.0"
-  },
+  "dependencies": {},
   "bin": "./index.js"
 }
