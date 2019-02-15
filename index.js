@@ -100,7 +100,9 @@ const installCommand = argv.installCommand
 const packagePath = argv.packagePath ? path.resolve(argv.packagePath) : path.join(process.cwd(), 'package.json');
 const package = require(packagePath);
 const backupName = `${packagePath}.backup`;
-package.devDependencies = Object.assign(pick(package.devDependencies, package.subsets[subset]), pick(package.dependencies, package.subsets[subset]));
+const dev = package.devDependencies ? package.devDependencies : {};
+const prod = package.dependencies ? package.dependencies : {};
+package.devDependencies = Object.assign(pick(dev, package.subsets[subset]), pick(prod, package.subsets[subset]));
 package.dependencies = {};
 return backup(packagePath, backupName)
   .then(() => writeJsonFile(packagePath, package))
