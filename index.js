@@ -65,6 +65,9 @@ function install(installCommand = 'npm install') {
   });
 }
 
+/**
+ * Method copied from https://github.com/tabrindle/install-subset/blob/master/index.js
+ */
 function pick(obj, props) {
   return Object.keys(obj)
     .filter(key => props.indexOf(key) >= 0)
