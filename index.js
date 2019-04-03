@@ -98,15 +98,24 @@ function getArgs() {
 }
 
 const argv = getArgs();
-const subset = argv.subset;
+const subsets = argv.subset;
 const installCommand = argv.installCommand
 const packagePath = argv.packagePath ? path.resolve(argv.packagePath) : path.join(process.cwd(), 'package.json');
 const package = require(packagePath);
 const backupName = `${packagePath}.backup`;
 const dev = package.devDependencies ? package.devDependencies : {};
 const prod = package.dependencies ? package.dependencies : {};
-package.devDependencies = Object.assign(pick(dev, package.subsets[subset]), pick(prod, package.subsets[subset]));
+const subsetDependencies = subsets.split(',')
+  .map(subset => Object.assign([], package.subsets[subset.trim]))
+  .reduce((accumulator, currentValue) => {
+    currentValue.forEach(value => accumulator.push(value));
+    return accumulator;
+  });
+const devDependencies = pick(dev, subsetDependencies);
+const prodDependencies = pick(prod, subsetDependencies);
+package.devDependencies = Object.assign(devDependencies, prodDependencies);
 package.dependencies = {};
+console.log(`Generated Package:\n${JSON.stringify(package, null, 2)}`);
 return backup(packagePath, backupName)
   .then(() => writeJsonFile(packagePath, package))
   .then(() => install(installCommand))

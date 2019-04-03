@@ -33,9 +33,9 @@ Then add the subsets object to your package.json
 ```
 
 Run tool
-`./node_modules/.bin/thin-install --subset=thinInstall`
+`./node_modules/.bin/thin-install --subset=thinInstall,anotherSubset`
 
 Available options
 
-- `--subset` - The subset to install
+- `--subset` - The subset to install. Separate multiple subsets with comma
 - `--installCommand` - Provide a custom install command. Usefule if using Yarn or another package manager.
