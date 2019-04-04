@@ -106,7 +106,7 @@ const backupName = `${packagePath}.backup`;
 const dev = package.devDependencies ? package.devDependencies : {};
 const prod = package.dependencies ? package.dependencies : {};
 const subsetDependencies = subsets.split(',')
-  .map(subset => Object.assign([], package.subsets[subset.trim]))
+  .map(subset => Object.assign([], package.subsets[subset.trim()]))
   .reduce((accumulator, currentValue) => {
     currentValue.forEach(value => accumulator.push(value));
     return accumulator;
