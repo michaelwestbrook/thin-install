@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-const PACKAGE_BASE = 'test/package-base.json';
-const PACKAGE_JSON = 'test/package.json';
+const PACKAGE_BASE = './test/package-base.json';
+const PACKAGE_JSON = './test/package.json';
 
 describe('Thin Install', () => {
   let packageBaseContent;
@@ -49,5 +49,19 @@ describe('Thin Install', () => {
       .then(() => readFile(PACKAGE_JSON))
       .then(data => expect(data).toBe(packageBaseContent))));
 
-  fit('installs the correct subsets', async () => installer.generateSubset('a', PACKAGE_JSON));
+  it('installs the correct subset', () => {
+    const subset = installer.generateSubset('foo', PACKAGE_JSON);
+    expect(Object.keys(subset.devDependencies).length).toBe(1);
+    expect(subset.devDependencies.a).toBe('1.0.0');
+    expect(Object.keys(subset.dependencies).length).toBe(0);
+  });
+
+  it('installs the correct subsets', () => {
+    const subset = installer.generateSubset('bar', PACKAGE_JSON);
+    console.log(subset)
+    expect(Object.keys(subset.devDependencies).length).toBe(2);
+    expect(subset.devDependencies.b).toBe('2.2.2');
+    expect(subset.devDependencies.c).toBe('3.3.3');
+    expect(Object.keys(subset.dependencies).length).toBe(0);
+  });
 });

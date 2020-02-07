@@ -1,5 +1,6 @@
 const fs = require('fs');
 const cp = require('child_process');
+
 /**
  * Installs a subset of dependencies for an NPM project.
  * 
@@ -94,8 +95,8 @@ module.exports.generateSubset = function(subsets, packagePath) {
     });
   const devDependencies = pick(dev, subsetDependencies);
   const prodDependencies = pick(prod, subsetDependencies);
-  packageJson.devDependencies = Object.assign(devDependencies, prodDependencies);
-  packageJson.dependencies = {};
+  packageJson.dependencies = Object.assign(devDependencies, prodDependencies);
+  packageJson.devDependencies = {};
   return packageJson;
 }
 
@@ -109,3 +110,5 @@ function pick(obj, props) {
       [key]: obj[key]
     }), {});
 };
+
+// console.log(JSON.stringify(module.exports.generateSubset("bar", "./test/package.json"), null, 2))
