@@ -1,5 +1,22 @@
 const fs = require('fs');
 const cp = require('child_process');
+/**
+ * Installs a subset of dependencies for an NPM project.
+ * 
+ * @param {string} subsets Name of the subset(s) to install. Use comma to separate multiple subsets.
+ * @param {string} packagePath Location of the package.json that contains the subset of dependencies. Defaults to `./package.json
+ * @param {string} installCommand Custom install command. Default: `npm install`
+ */
+module.exports = function (subsets, packagePath, installCommand) {
+  const backupName = `${packagePath}.backup`;
+  const subsetPackage = module.exports.generateSubset(subsets, packagePath);
+  console.log(`Generated subset package.json\n${subsetPackage}`);
+  return module.exports.backup(packagePath, backupName)
+    .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
+    .then(() => module.exports.install(installCommand))
+    .then(() => module.exports.restoreBackup(packagePath, backupName))
+    .then(() => module.exports.deleteFile(backupName));
+}
 
 module.exports.backup = function (fileName, backupName) {
   return new Promise((resolve, reject) => fs.copyFile(fileName, backupName, error => {
@@ -62,6 +79,26 @@ module.exports.install = function (installCommand) {
   });
 }
 
+module.exports.generateSubset = function(subsets, packagePath) {
+  const packageJson = require(packagePath);
+  if (!packageJson.subsets || packageJson.subsets.length === 0) {
+    throw new Error(`Package ${packagePath} does not contain any subsets`);
+  }
+  const dev = packageJson.devDependencies ? packageJson.devDependencies : {};
+  const prod = packageJson.dependencies ? packageJson.dependencies : {};
+  const subsetDependencies = subsets.split(',')
+    .map(subset => Object.assign([], packageJson.subsets[subset.trim()]))
+    .reduce((accumulator, currentValue) => {
+      currentValue.forEach(value => accumulator.push(value));
+      return accumulator;
+    });
+  const devDependencies = pick(dev, subsetDependencies);
+  const prodDependencies = pick(prod, subsetDependencies);
+  packageJson.devDependencies = Object.assign(devDependencies, prodDependencies);
+  packageJson.dependencies = {};
+  return packageJson;
+}
+
 /**
  * Method copied from https://github.com/tabrindle/install-subset/blob/master/index.js
  */
@@ -72,36 +109,3 @@ function pick(obj, props) {
       [key]: obj[key]
     }), {});
 };
-
-/**
- * Installs a subset of dependencies for an NPM project.
- * 
- * @param {string} subsets Name of the subset(s) to install. Use comma to separate multiple subsets.
- * @param {string} packagePath Location of the package.json that contains the subset of dependencies. Defaults to `./package.json
- * @param {string} installCommand Custom install command. Default: `npm install`
- */
-module.exports = function(subsets, packagePath, installCommand) {
-  const package = require(packagePath);
-  if (!package.subsets || package.subsets.length === 0) {
-    throw new Error(`Package ${packagePath} does not contain any subsets`);
-  }
-  const backupName = `${packagePath}.backup`;
-  const dev = package.devDependencies ? package.devDependencies : {};
-  const prod = package.dependencies ? package.dependencies : {};
-  const subsetDependencies = subsets.split(',')
-    .map(subset => Object.assign([], package.subsets[subset.trim()]))
-    .reduce((accumulator, currentValue) => {
-      currentValue.forEach(value => accumulator.push(value));
-      return accumulator;
-    });
-  const devDependencies = pick(dev, subsetDependencies);
-  const prodDependencies = pick(prod, subsetDependencies);
-  package.devDependencies = Object.assign(devDependencies, prodDependencies);
-  package.dependencies = {};
-  console.log(`Generated Package:\n${JSON.stringify(package, null, 2)}`);
-  return module.exports.backup(packagePath, backupName)
-    .then(() => module.exports.writeJsonFile(packagePath, package))
-    .then(() => module.exports.install(installCommand))
-    .then(() => module.exports.restoreBackup(packagePath, backupName))
-    .then(() => module.exports.deleteFile(backupName));
-}
