@@ -21,12 +21,19 @@ async function readJsonFile(fileName) {
 module.exports = async function (subsets, packagePath, installCommand) {
   const backupName = `${packagePath}.backup`;
   const subsetPackage = await module.exports.generateSubset(subsets, packagePath);
-  console.log(`Generated subset package.json\n${subsetPackage}`);
+  console.log(`Generated subset package.json\n${JSON.stringify(subsetPackage, null, 2)}`);
+  let installSuccess = true;
   return module.exports.backup(packagePath, backupName)
     .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
     .then(() => module.exports.install(installCommand))
+    .catch(() => installSuccess = false)
     .finally(() => module.exports.restoreBackup(packagePath, backupName)
-      .then(() => module.exports.deleteFile(backupName)));
+      .then(() => module.exports.deleteFile(backupName))
+      .then(() => {
+        if (!installSuccess) {
+          process.exit(1);
+        }
+      }));
 }
 
 module.exports.backup = function (fileName, backupName) {
