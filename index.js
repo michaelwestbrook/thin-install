@@ -25,8 +25,8 @@ module.exports = async function (subsets, packagePath, installCommand) {
   return module.exports.backup(packagePath, backupName)
     .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
     .then(() => module.exports.install(installCommand))
-    .then(() => module.exports.restoreBackup(packagePath, backupName))
-    .then(() => module.exports.deleteFile(backupName));
+    .finally(() => module.exports.restoreBackup(packagePath, backupName)
+      .then(() => module.exports.deleteFile(backupName)));
 }
 
 module.exports.backup = function (fileName, backupName) {
