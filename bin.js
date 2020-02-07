@@ -21,4 +21,4 @@ const argv = require('yargs').options({
   }
 }).argv;
 
-thinInstall(argv.subset, argv.packagePath, argv.installCommand);
+(async () => thinInstall(argv.subset, argv.packagePath, argv.installCommand))();
