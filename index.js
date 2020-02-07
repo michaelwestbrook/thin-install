@@ -1,54 +1,75 @@
-#!/usr/bin/env node
-
 const fs = require('fs');
-const path = require('path');
 const cp = require('child_process');
 
-function backup(fileName, backupName) {
+async function readJsonFile(fileName) {
+  return new Promise((resolve, reject) => fs.readFile(fileName, 'utf8', (error, data) => {
+    if (error) {
+      return reject(error);
+    }
+
+    resolve(JSON.parse(data));
+  }))
+}
+
+/**
+ * Installs a subset of dependencies for an NPM project.
+ * 
+ * @param {string} subsets Name of the subset(s) to install. Use comma to separate multiple subsets.
+ * @param {string} packagePath Location of the package.json that contains the subset of dependencies. Defaults to `./package.json
+ * @param {string} installCommand Custom install command. Default: `npm install`
+ */
+module.exports = function (subsets, packagePath, installCommand) {
+  const backupName = `${packagePath}.backup`;
+  const subsetPackage = module.exports.generateSubset(subsets, packagePath);
+  console.log(`Generated subset package.json\n${subsetPackage}`);
+  return module.exports.backup(packagePath, backupName)
+    .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
+    .then(() => module.exports.install(installCommand))
+    .then(() => module.exports.restoreBackup(packagePath, backupName))
+    .then(() => module.exports.deleteFile(backupName));
+}
+
+module.exports.backup = function (fileName, backupName) {
   return new Promise((resolve, reject) => fs.copyFile(fileName, backupName, error => {
     if (error) {
       reject(error);
     } else {
-      console.log("Created backup");
       resolve();
     }
   }));
 }
 
-function deleteFile(fileName) {
+module.exports.deleteFile = function (fileName) {
   return new Promise((resolve, reject) => fs.unlink(fileName, error => {
     if (error) {
       reject(error);
     } else {
-      console.log(`Deleted ${fileName}`);
       resolve();
     }
   }));
 }
 
-function restoreBackup(fileName, backupName) {
+module.exports.restoreBackup = function (fileName, backupName) {
   return new Promise((resolve, reject) => fs.copyFile(backupName, fileName, error => {
     if (error) {
       reject(error);
     } else {
-      console.log(`Copied ${backupName} to ${fileName}`);
       resolve();
     }
   }));
 }
 
-function writeJsonFile(fileName, json) {
+module.exports.writeJsonFile = function (fileName, json) {
   return new Promise((resolve, reject) => fs.writeFile(fileName, JSON.stringify(json, null, 2), error => {
     if (error) {
       reject(error);
     } else {
-      console.log("Writing");
       resolve(error);
     }
   }));
 }
 
-function install(installCommand = 'npm install') {
+module.exports.install = function (installCommand) {
   return new Promise((resolve, reject) => {
     const child = cp.exec(installCommand);
     child.stdout.on('data', console.log);
@@ -58,11 +79,37 @@ function install(installCommand = 'npm install') {
       if (code !== 0) {
         reject(`Install exited with code ${code}`);
       } else {
-        console.log(`Install exited with code ${code}`);
         resolve();
       }
     });
   });
+}
+
+module.exports.generateSubset = async function (subsets, packagePath) {
+  if (!packagePath) {
+    throw new Error('No path provided for package.json');
+  }
+
+  const packageJson = await readJsonFile(packagePath);
+  if (!packageJson.subsets || packageJson.subsets.length === 0) {
+    throw new Error(`Package ${packagePath} does not contain any subsets`);
+  }
+  const dev = packageJson.devDependencies ? packageJson.devDependencies : {};
+  const prod = packageJson.dependencies ? packageJson.dependencies : {};
+  const subsetDependencies = subsets.split(',')
+    .map(subset => Object.assign([], packageJson.subsets[subset.trim()]))
+    .reduce((accumulator, currentValue) => {
+      currentValue.forEach(value => accumulator.push(value));
+      return accumulator;
+    });
+  const devDependencies = pick(dev, subsetDependencies);
+  const prodDependencies = pick(prod, subsetDependencies);
+  packageJson.dependencies = Object.assign(devDependencies, prodDependencies);
+  packageJson.devDependencies = {};
+  if (Object.keys(packageJson.dependencies).length === 0) {
+    throw new Error(`${subsets} do not contain any dependencies`);
+  }
+  return packageJson;
 }
 
 /**
@@ -75,50 +122,3 @@ function pick(obj, props) {
       [key]: obj[key]
     }), {});
 };
-
-function getArgs() {
-  const args = process.argv.slice(2);
-  let subset, installCommand, packagePath;
-  args.forEach(arg => {
-    const keyValue = arg.split('=');
-    if (keyValue[0].toLowerCase() === '--subset') {
-      subset = keyValue[1];
-    } else if (keyValue[0].toLowerCase() === '--packagepath') {
-      packagePath = keyValue[1];
-    } else if (keyValue[0].toLowerCase() === '--installcommand') {
-      installCommand = keyValue[1];
-    }
-  });
-
-  return {
-    subset: subset,
-    installCommand: installCommand,
-    packagePath
-  }
-}
-
-const argv = getArgs();
-const subsets = argv.subset;
-const installCommand = argv.installCommand
-const packagePath = argv.packagePath ? path.resolve(argv.packagePath) : path.join(process.cwd(), 'package.json');
-const package = require(packagePath);
-const backupName = `${packagePath}.backup`;
-const dev = package.devDependencies ? package.devDependencies : {};
-const prod = package.dependencies ? package.dependencies : {};
-const subsetDependencies = subsets.split(',')
-  .map(subset => Object.assign([], package.subsets[subset.trim()]))
-  .reduce((accumulator, currentValue) => {
-    currentValue.forEach(value => accumulator.push(value));
-    return accumulator;
-  });
-const devDependencies = pick(dev, subsetDependencies);
-const prodDependencies = pick(prod, subsetDependencies);
-package.devDependencies = Object.assign(devDependencies, prodDependencies);
-package.dependencies = {};
-console.log(`Generated Package:\n${JSON.stringify(package, null, 2)}`);
-return backup(packagePath, backupName)
-  .then(() => writeJsonFile(packagePath, package))
-  .then(() => install(installCommand))
-  .then(() => restoreBackup(packagePath, backupName))
-  .then(() => deleteFile(backupName))
-  .catch(console.error);
