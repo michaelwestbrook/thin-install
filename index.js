@@ -18,9 +18,9 @@ async function readJsonFile(fileName) {
  * @param {string} packagePath Location of the package.json that contains the subset of dependencies. Defaults to `./package.json
  * @param {string} installCommand Custom install command. Default: `npm install`
  */
-module.exports = function (subsets, packagePath, installCommand) {
+module.exports = async function (subsets, packagePath, installCommand) {
   const backupName = `${packagePath}.backup`;
-  const subsetPackage = module.exports.generateSubset(subsets, packagePath);
+  const subsetPackage = await module.exports.generateSubset(subsets, packagePath);
   console.log(`Generated subset package.json\n${subsetPackage}`);
   return module.exports.backup(packagePath, backupName)
     .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
