@@ -1,6 +1,16 @@
 const fs = require('fs');
 const cp = require('child_process');
 
+async function readJsonFile(fileName) {
+  return new Promise((resolve, reject) => fs.readFile(fileName, 'utf8', (error, data) => {
+    if (error) {
+      return reject(error);
+    }
+
+    resolve(JSON.parse(data));
+  }))
+}
+
 /**
  * Installs a subset of dependencies for an NPM project.
  * 
@@ -24,7 +34,6 @@ module.exports.backup = function (fileName, backupName) {
     if (error) {
       reject(error);
     } else {
-      console.log("Created backup");
       resolve();
     }
   }));
@@ -35,7 +44,6 @@ module.exports.deleteFile = function (fileName) {
     if (error) {
       reject(error);
     } else {
-      console.log(`Deleted ${fileName}`);
       resolve();
     }
   }));
@@ -46,7 +54,6 @@ module.exports.restoreBackup = function (fileName, backupName) {
     if (error) {
       reject(error);
     } else {
-      console.log(`Copied ${backupName} to ${fileName}`);
       resolve();
     }
   }));
@@ -57,7 +64,6 @@ module.exports.writeJsonFile = function (fileName, json) {
     if (error) {
       reject(error);
     } else {
-      console.log("Writing");
       resolve(error);
     }
   }));
@@ -73,15 +79,18 @@ module.exports.install = function (installCommand) {
       if (code !== 0) {
         reject(`Install exited with code ${code}`);
       } else {
-        console.log(`Install exited with code ${code}`);
         resolve();
       }
     });
   });
 }
 
-module.exports.generateSubset = function(subsets, packagePath) {
-  const packageJson = require(packagePath);
+module.exports.generateSubset = async function (subsets, packagePath) {
+  if (!packagePath) {
+    throw new Error('No path provided for package.json');
+  }
+
+  const packageJson = await readJsonFile(packagePath);
   if (!packageJson.subsets || packageJson.subsets.length === 0) {
     throw new Error(`Package ${packagePath} does not contain any subsets`);
   }
@@ -97,6 +106,9 @@ module.exports.generateSubset = function(subsets, packagePath) {
   const prodDependencies = pick(prod, subsetDependencies);
   packageJson.dependencies = Object.assign(devDependencies, prodDependencies);
   packageJson.devDependencies = {};
+  if (Object.keys(packageJson.dependencies).length === 0) {
+    throw new Error(`${subsets} do not contain any dependencies`);
+  }
   return packageJson;
 }
 
@@ -110,5 +122,3 @@ function pick(obj, props) {
       [key]: obj[key]
     }), {});
 };
-
-// console.log(JSON.stringify(module.exports.generateSubset("bar", "./test/package.json"), null, 2))
