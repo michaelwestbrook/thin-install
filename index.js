@@ -26,11 +26,16 @@ module.exports = async function (subsets, packagePath, installCommand) {
   return module.exports.backup(packagePath, backupName)
     .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
     .then(() => module.exports.install(installCommand))
-    .catch(() => installSuccess = false)
+    .catch(error => {
+      console.log("bizbuz")
+      console.log(error);
+      installSuccess = false;
+    })
     .finally(() => module.exports.restoreBackup(packagePath, backupName)
       .then(() => module.exports.deleteFile(backupName))
       .then(() => {
         if (!installSuccess) {
+          console.log('boo')
           process.exit(1);
         }
       }));
@@ -83,7 +88,7 @@ module.exports.install = function (installCommand) {
     child.stderr.on('data', console.warn);
     child.on('error', console.error);
     child.on('close', (code) => {
-      if (code !== 0) {
+      if (code) {
         reject(`Install exited with code ${code}`);
       } else {
         resolve();
