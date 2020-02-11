@@ -26,16 +26,11 @@ module.exports = async function (subsets, packagePath, installCommand) {
   return module.exports.backup(packagePath, backupName)
     .then(() => module.exports.writeJsonFile(packagePath, subsetPackage))
     .then(() => module.exports.install(installCommand))
-    .catch(error => {
-      console.log("bizbuz")
-      console.log(error);
-      installSuccess = false;
-    })
+    .catch(() => installSuccess = false)
     .finally(() => module.exports.restoreBackup(packagePath, backupName)
       .then(() => module.exports.deleteFile(backupName))
       .then(() => {
         if (!installSuccess) {
-          console.log('boo')
           process.exit(1);
         }
       }));
