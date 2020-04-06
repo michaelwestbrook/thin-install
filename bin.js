@@ -18,6 +18,12 @@ const argv = require('yargs').options({
     describe: 'Custom install command. Default: `npm install`',
     default: 'npm install',
     alias: 'i'
+  },
+  timeout: {
+    type: 'number',
+    describe: 'Set the timeout value (in milliseconds) for the install command. Default 5 minutes.',
+    default: '300000',
+    alias: 't'
   }
 }).argv;
 
