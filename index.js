@@ -76,9 +76,9 @@ module.exports.writeJsonFile = function (fileName, json) {
   }));
 }
 
-module.exports.install = function (installCommand) {
+module.exports.install = function (installCommand, timeout = 300000) {
   return new Promise((resolve, reject) => {
-    const child = cp.exec(installCommand);
+    const child = cp.exec(installCommand, { timeout });
     child.stdout.on('data', console.log);
     child.stderr.on('data', console.warn);
     child.on('error', console.error);
